@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Double Line Chart</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+</head>
+<body>
+
+  <canvas id="myChart"></canvas>
+  <input type="file" id="fileInput1">
+  <input type="file" id="fileInput2">
+  <script>
+    function readCSV(file) {
+      return new Promise((resolve, reject) => {
+        const reader= new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split('\n');
+          const headers = lines[0].split(',').map(header => header.trim());
+          const data = lines.slice(1).map(line => line.split(',').map(value => value.trim()));
+          resolve({ headers, data });
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    var ctx =document.getElementById('myChart').getContext('2d');
+    var fileInput1 = document.getElementById('fileInput1');
+    var fileInput2 = document.getElementById('fileInput2');
+
+    function createDataset(data, headers, yIndex,color) {
+      const timeIndex=headers.indexOf('Time (s)');
+      const yHeader=headers[yIndex];
+
+      var wave=data.map(entry=>({x:parseFloat(entry[timeIndex]),y:parseFloat(entry[yIndex])}));
+
+      return {
+        label: yHeader,
+        data: wave,
+        backgroundColor: color,
+        borderColor: color,
+        borderWidth: 0.7,
+        tension: 0,
+        pointRadius: 0
+      };
+    }
+
+    fileInput1.addEventListener('change', function(event) {
+      var file = event.target.files[0];
+
+      readCSV(file)
+        .then(({headers,data}) => {
+          let minY1=Number.MAX_SAFE_INTEGER;
+          let maxY1=Number.MIN_SAFE_INTEGER;
+          data.forEach(entry => {
+            const yVal=parseFloat(entry[1]);
+            if (yVal<minY1) {
+              minY1=yVal;
+            }
+            if (yVal>maxY1) {
+              maxY1=yVal;
+            }
+          });
+
+          const set1=createDataset(data, headers, 1,'rgba(64,224,208,0.8)');
+
+          fileInput2.addEventListener('change', function(event) {
+            var file = event.target.files[0];
+
+            readCSV(file)
+              .then(({ headers, data }) => {
+                let minY2=Number.MAX_SAFE_INTEGER;
+                let maxY2=Number.MIN_SAFE_INTEGER;
+                data.forEach(entry => {
+                  const yVal = parseFloat(entry[1]);
+                  if (yVal<minY2) {
+                    minY2=yVal;
+                  }
+                  if (yVal>maxY2) {
+                    maxY2=yVal;
+                  }
+                });
+
+                const set2 = createDataset(data, headers, 1,'rgba(147, 77, 236  ,0.8)');
+
+                var myChart = new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                    datasets: [set1,set2] //for multiple lines
+                  },
+                  options: {
+                    scales: {
+                      x: {
+                        title: {
+                          display: true,
+                          text: 'Time (s)'
+                        },
+                        type: 'linear',
+                        ticks: {
+                          display: true,
+                          stepSize: 0,
+                          callback: function(value, index, values) {
+                            if(index===0) {
+                              return value.toFixed(2);
+                            }
+                            else if(index===values.length - 1) {
+                              return value.toFixed(2);
+                            }
+                            else{
+                              return value.toFixed(2);
+                            }
+                          }
+                        },
+
+                        min:Math.min(set1.data[0].x, set2.data[0].x),
+                        max:Math.max(set1.data[set1.data.length-1].x, set2.data[set2.data.length-1].x)
+                      },
+
+                      y: {
+                        title: {
+                          display: true,
+                          text: 'Data'
+                        },
+                        min:Math.min(minY1,minY2),
+                        max:Math.max(maxY1,maxY2)+1,
+                        display: true,
+                        ticks: {
+                          stepSize: 1
+                        }
+                      }
+                    },
+
+                    plugins: {
+                      annotation: {
+                        annotations: [
+                          {
+                            type: 'line',
+                            xMin:set1.data[0].x,
+                            xMax:set1.data[0].x,
+                            borderColor: 'black',
+                            borderWidth:2
+                          },
+                          {
+                            type: 'line',
+                            yMin: Math.min(minY1, minY2),
+                            yMax: Math.min(minY1, minY2),
+                            borderColor: 'black',
+                            borderWidth:2
+                          }
+                        ]
+                      }
+                    }
+                  }
+                });
+              })
+
+              .catch(error => {
+                console.error('Error loading CSV file:', error);
+              });
+          });
+        })
+        .catch(error => {
+          console.error('Error loading CSV file:', error);
+        });
+    });
+  </script>
+</body>
+</html>
