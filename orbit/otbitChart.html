@@ -1,0 +1,233 @@
+ <!DOCTYPE html>
+<html>
+<head>
+  <title>Orbit Chart with Chart.js</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1"></script>
+</head>
+<body>
+  <canvas id="myChart"></canvas>
+  <input type="file" id="fileInput1">
+  <input type="file" id="fileInput2">
+  <script>
+    function readCSV(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split('\n');
+          const headers = lines[7].split(',').map(header => header.trim());
+          const data = lines.slice(8).map(line => line.split(',').map(value => value.trim())); //used 7 and 8 instead of 0 and 1 in lines[] and slice[] to read after the comment rows in cvs
+          resolve({ headers, data });
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var fileData = [];
+
+    var fileInput1 = document.getElementById('fileInput1');
+    var fileInput2 = document.getElementById('fileInput2');
+
+    var firstHeader, secondHeader;
+
+    fileInput1.addEventListener('change', function(event) {
+      var file = event.target.files[0];
+      readCSV(file)
+        .then(({ headers, data }) => {
+          firstHeader = headers[1];
+          const fileIndex = 0;
+          fileData[fileIndex] = data.map(entry => parseFloat(entry[1]));
+          compareAndPlot(headers);
+        })
+        .catch(error => {
+          console.error('Error loading CSV file:', error);
+        });
+    });
+
+    fileInput2.addEventListener('change', function(event) {
+      var file = event.target.files[0];
+      readCSV(file)
+        .then(({ headers, data }) => {
+          secondHeader = headers[1];
+          const fileIndex = 1;
+          fileData[fileIndex] = data.map(entry => parseFloat(entry[1]));
+          compareAndPlot(headers);
+        })
+        .catch(error => {
+          console.error('Error loading CSV file:', error);
+        });
+    });
+
+    function compareAndPlot(headers) {
+      if (fileData.length === 2 && fileData[0].length === fileData[1].length) {
+        var myChart = new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              label: 'XY RECORDER',
+              data: fileData[0].map((value, index) => ({ x: value, y: fileData[1][index] })),
+              backgroundColor: 'rgba(72, 176, 131, 1)',
+              borderColor: 'rgba(72, 176, 131, 1)',
+              borderWidth: 0,
+              pointRadius: 1,
+              pointHoverRadius: 4
+            }]
+          },
+          options: {
+            scales: {
+              x: {
+                display: true,
+                title: {
+                  display: true,
+                  text: firstHeader
+                },
+                min: -5,
+                max: 5,
+                ticks: {
+                  stepSize: 1
+                }
+              },
+              y: {
+                display: true,
+                title: {
+                  display: true,
+                  text: secondHeader
+                },
+                min: -5,
+                max: 5,
+                ticks: {
+                  stepSize: 1
+                }
+              }
+            }
+          }
+        });
+        const datasets = myChart.data.datasets;
+        datasets.forEach((dataset, index) => {
+          const header = headers[index];
+          const [, yCoordinateName] = header.split(',');
+        });
+        myChart.update();
+      }
+    }
+  </script>
+</body>
+</html> 
+
+<!-- <!DOCTYPE html>
+<html>
+<head>
+  <title>Orbit Chart with Chart.js</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1"></script>
+</head>
+<body>
+  <canvas id="myChart"></canvas>
+  <input type="file" id="fileInput1">
+  <input type="file" id="fileInput2">
+  <script>
+    function readCSV(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split('\n');
+          const headers = lines[0].split(',').map(header => header.trim());
+          const data = lines.slice(1).map(line => line.split(',').map(value => value.trim())); //used 7 and 8 instead of 0 and 1 in lines[] and slice[] to read after the comment rows in cvs
+          resolve({ headers, data });
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var fileData = [];
+
+    var fileInput1 = document.getElementById('fileInput1');
+    var fileInput2 = document.getElementById('fileInput2');
+
+    var firstHeader, secondHeader;
+
+    fileInput1.addEventListener('change', function(event) {
+      var file = event.target.files[0];
+      readCSV(file)
+        .then(({ headers, data }) => {
+          firstHeader = headers[1];
+          const fileIndex = 0;
+          fileData[fileIndex] = data.map(entry => parseFloat(entry[1]));
+          compareAndPlot(headers);
+        })
+        .catch(error => {
+          console.error('Error loading CSV file:', error);
+        });
+    });
+
+    fileInput2.addEventListener('change', function(event) {
+      var file = event.target.files[0];
+      readCSV(file)
+        .then(({ headers, data }) => {
+          secondHeader = headers[1];
+          const fileIndex = 1;
+          fileData[fileIndex] = data.map(entry => parseFloat(entry[1]));
+          compareAndPlot(headers);
+        })
+        .catch(error => {
+          console.error('Error loading CSV file:', error);
+        });
+    });
+
+    function compareAndPlot(headers) {
+      if (fileData.length === 2 && fileData[0].length === fileData[1].length) {
+        var myChart = new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              label: 'XY RECORDER',
+              data: fileData[0].map((value, index) => ({ x: value, y: fileData[1][index] })),
+              backgroundColor: 'rgba(72, 176, 131, 1)',
+              borderColor: 'rgba(72, 176, 131, 1)',
+              borderWidth: 0,
+              pointRadius: 1,
+              pointHoverRadius: 4
+            }]
+          },
+          options: {
+            scales: {
+              x: {
+                display: true,
+                title: {
+                  display: true,
+                  text: firstHeader
+                },
+                min: -5,
+                max: 5,
+                ticks: {
+                  stepSize: 1
+                }
+              },
+              y: {
+                display: true,
+                title: {
+                  display: true,
+                  text: secondHeader
+                },
+                min: -5,
+                max: 5,
+                ticks: {
+                  stepSize: 1
+                }
+              }
+            }
+          }
+        });
+        const datasets = myChart.data.datasets;
+        datasets.forEach((dataset, index) => {
+          const header = headers[index];
+          const [, yCoordinateName] = header.split(',');
+        });
+        myChart.update();
+      }
+    }
+  </script>
+</body>
+</html> -->
