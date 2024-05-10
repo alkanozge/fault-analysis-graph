@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Orbit Chart with Chart.js</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.5.1"></script>
+</head>
+<body>
+  <canvas id="myChart"></canvas>
+  <input type="file" id="fileInput1">
+  <input type="file" id="fileInput2">
+  <script>
+    function readCSV(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const lines = reader.result.split('\n');
+          const headers = lines[0].split(',').map(header => header.trim());
+          const data = lines.slice(1).map(line => line.split(',').map(value => value.trim()));
+          resolve({ headers, data });
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var fileInput1 = document.getElementById('fileInput1');
+    var fileInput2 = document.getElementById('fileInput2');
+    var ldXData, ldZData;
+
+    fileInput1.addEventListener('change', function(event) {
+      var file = event.target.files[0];
+      readCSV(file)
+        .then(({ headers, data }) => {
+          const ldZIndex = headers.indexOf('LD-X (mm)');
+          ldXData = data.map(entry => parseFloat(entry[ldZIndex]));
+          compareAndPlot();
+        })
+        .catch(error => {
+          console.error('Error loading CSV file:', error);
+        });
+    });
+
+    fileInput2.addEventListener('change', function(event) {
+      var file = event.target.files[0];
+      readCSV(file)
+        .then(({ headers, data }) => {
+          const ldXIndex = headers.indexOf('LD-Z (mm)');
+          ldZData = data.map(entry => parseFloat(entry[ldXIndex]));
+          compareAndPlot();
+        })
+        .catch(error => {
+          console.error('Error loading CSV file:', error);
+        });
+    });
+
+    function compareAndPlot() {
+      if (ldXData && ldZData && ldXData.length === ldZData.length) {
+        var myChart = new Chart(ctx, {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              label: 'Orbit',
+              data: ldXData.map((value, index) => ({ x: value, y: ldZData[index] })),
+              backgroundColor: 'rgba(72, 176, 131, 1)',
+              borderColor: 'rgba(72, 176, 131, 1)',
+              borderWidth: 0,
+              pointRadius: 1,
+              pointHoverRadius: 4
+            }]
+          },
+          options: {
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'LD-X (mm)'
+                },
+                
+                display: true,
+                ticks: {
+                  stepSize: 1
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'LD-Z (mm)'
+                },
+                
+                display: true,
+                ticks: {
+                  stepSize: 1
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
